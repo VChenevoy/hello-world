@@ -1,0 +1,60 @@
+<?php
+
+require_once ('../../../wp-config.php');
+$helper = new HELPER;
+
+global $wpdb;
+$table_name = $wpdb->prefix . 'fly_vol_reserve';
+
+$date = date('Y-m-d');
+$helper = new HELPER;
+
+$html = '';
+
+$where = array(
+    'id' => $_POST['reserve'],
+);
+
+$result = $wpdb->delete($table_name, $where);
+
+/***********/
+
+if($result):
+
+  global $wpdb;
+  $table_name = $wpdb->prefix . 'fly_vols';
+  $vol = $wpdb->get_row( 'SELECT * FROM '.$table_name.' WHERE id="'.$_POST['vol'].'" ', OBJECT );
+
+  /****/
+
+  $userVol = $helper->infos_profil($vol->id_pilote);
+  $userReserve = $helper->infos_profil($_POST['pilote']);
+
+  $link = 'http://'.$_SERVER['HTTP_HOST'].'/?page_id=104&page=viewVol&id='.$_POST['vol'];
+
+  $message = 'Bonjour '.$userReserve->prenom.' '.$userReserve->nom.'<br /><br />';
+  $message .= 'Votre réservation '.$vol->title.' à été <strong>refusé</strong><br /><br />';
+  $message .= 'Vous pouvez retrouvé le détail du vol ici : <a href="'.$link.'">visualiser le détail</a><br /><br />';
+  $message .= 'Cordialement';
+
+  $headers = array('Content-Type: text/html; charset=UTF-8');
+
+  wp_mail($userReserve->email,'Réservation refusé : '.$vol->title ,$message,$headers);
+
+  $html .= '<div class="alert alert-info" role="alert">';
+    $html .= 'La réservation est refusé, le pilote va recevoir un email de refus.';
+  $html .= '</div>';
+else:
+  $html .= '<div class="alert alert-danger" role="alert">';
+    $html .= 'Erreur de refus pour la réservation';
+  $html .= '</div>';      
+endif;
+
+$return = array(
+    'html' => $html
+);
+
+echo json_encode($return);
+exit();
+
+?>
